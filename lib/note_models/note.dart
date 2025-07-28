@@ -17,10 +17,10 @@ class Note {
 
   factory Note.fromJson(Map<String, dynamic> json) {
     return Note(
-      id: json['_id'],
+      id: json['_id'] as String? ?? "",
       title: json['title'] ?? '',
       content: json['content'] ?? '',
-      imageUrl: json['imageUrl'],
+      imageUrl: json['imageUrl']  as String?,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
     );

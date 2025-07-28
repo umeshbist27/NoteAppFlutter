@@ -3,7 +3,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:noteappflu/note_models/note.dart';
 import 'package:html/parser.dart' as html_parser;
 
-
 class SidebarWidget extends StatefulWidget {
   final Note? activeNote;
   final List<Note> notes;
@@ -57,7 +56,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
     } else {
       final result = sortedNotes.where((note) {
         return note.title.toLowerCase().contains(_searchTitle.toLowerCase());
-      }).toList(); 
+      }).toList();
 
       if (result.isEmpty) {
         Fluttertoast.showToast(msg: "Note not matched");
@@ -140,14 +139,14 @@ class _SidebarWidgetState extends State<SidebarWidget> {
     return months[month - 1];
   }
 
- String _getPreviewText(String content) {
-  final document = html_parser.parse(content);
-  String plainText = document.body?.text.trim() ?? '';
-  if (plainText.length > 100) {
-    return "${plainText.substring(0, 100)}...";
+  String _getPreviewText(String content) {
+    final document = html_parser.parse(content);
+    String plainText = document.body?.text.trim() ?? '';
+    if (plainText.length > 100) {
+      return "${plainText.substring(0, 100)}...";
+    }
+    return plainText;
   }
-  return plainText;
-}
 
   @override
   Widget build(BuildContext context) {
@@ -309,10 +308,10 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                                       color: Colors.grey[600],
                                     ),
                                   ),
-                                  SizedBox(width: 24), 
+                                  SizedBox(width: 24),
                                 ],
                               ),
-                              
+
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,

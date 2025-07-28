@@ -4,10 +4,12 @@ import 'package:http/http.dart' as http;
 import 'package:noteappflu/note_models/note.dart';
 
 class NoteService {
-  static final baseUrl = dotenv.env['BASE_URL'];
+  static String baseUrl = dotenv.env['BASE_URL'] ?? '';
+
+  static http.Client client = http.Client();
 
   static Future<List<Note>> fetchNotes(String token) async {
-    final response = await http.get(
+    final response = await client.get(
       Uri.parse('$baseUrl/api/notes/note'),
       headers: {'Authorization': 'Bearer $token'},
     );
@@ -21,7 +23,7 @@ class NoteService {
   }
 
   static Future<void> deleteNote(String id, String token) async {
-    final response = await http.delete(
+    final response = await client.delete(
       Uri.parse('$baseUrl/api/notes/$id'),
       headers: {'Authorization': 'Bearer $token'},
     );
@@ -45,7 +47,7 @@ class NoteService {
         : Uri.parse('$baseUrl/api/notes/edit/${note.id}'); 
 
     final response = await (isNew
-        ? http.post(
+        ? client.post(
             uri,
             headers: {
               'Authorization': 'Bearer $token',
@@ -53,7 +55,7 @@ class NoteService {
             },
             body: json.encode(body),
           )
-        : http.put(
+        : client.put(
             uri,
             headers: {
               'Authorization': 'Bearer $token',

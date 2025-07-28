@@ -19,9 +19,7 @@ class HomeScreen extends StatelessWidget {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: constraints.maxHeight,
-              ),
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: IntrinsicHeight(
                 child: Column(
                   children: [
@@ -43,21 +41,30 @@ class HomeScreen extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.note_alt, size: 60, color: Colors.grey),
+                          const Icon(
+                            Icons.note_alt,
+                            size: 60,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(height: 16),
                           const Text(
                             'Note Taking App',
-                            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           const Text(
                             'New here? Sign up to get started.\nAlready have an account? Login and manage your notes.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 16, color: Colors.black54),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black54,
+                            ),
                           ),
                           const SizedBox(height: 24),
 
-                         
                           ElevatedButton.icon(
                             onPressed: () {
                               Navigator.pushNamed(context, '/signup');

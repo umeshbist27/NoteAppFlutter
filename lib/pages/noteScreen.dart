@@ -11,10 +11,10 @@ class NoteScreen extends StatefulWidget {
   final VoidCallback onLogout;
 
   const NoteScreen({
-    Key? key,
+    super.key,
     required this.username,
     required this.onLogout,
-  }) : super(key: key);
+  });
 
   @override
   State<NoteScreen> createState() => _NoteScreenState();
@@ -28,7 +28,7 @@ class _NoteScreenState extends State<NoteScreen> {
     super.didChangeDependencies();
     noteController = Provider.of<NoteController>(context);
   }
-
+  
   void handleNoteSelected(Note note) {
     noteController.selectNote(note);
     Navigator.of(context).pop(); 
