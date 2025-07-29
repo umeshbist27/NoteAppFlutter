@@ -79,6 +79,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
     });
   }
 
+
   @override
   void dispose() {
     _debouncer.dispose();

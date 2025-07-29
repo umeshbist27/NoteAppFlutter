@@ -63,7 +63,7 @@ class HomeScreen extends StatelessWidget {
                               color: Colors.black54,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 12),
 
                           ElevatedButton.icon(
                             onPressed: () {
@@ -82,8 +82,6 @@ class HomeScreen extends StatelessWidget {
                           ),
 
                           const SizedBox(height: 12),
-
-                          // Login
                           OutlinedButton.icon(
                             onPressed: () {
                               Navigator.pushNamed(context, '/login');
