@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:html_editor_enhanced/html_editor.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:noteappflu/components/upload_image_button.dart';
 import 'package:noteappflu/note_models/note.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:noteappflu/utilis/date_formatter.dart';
+import 'package:noteappflu/utilis/debouncer.dart';
 
 class NoteEditorWidget extends StatefulWidget {
   final Note note;
@@ -27,22 +25,22 @@ class NoteEditorWidget extends StatefulWidget {
 class _NoteEditorWidgetState extends State<NoteEditorWidget> {
   late TextEditingController _titleController;
   late HtmlEditorController _htmlController;
+  late Debouncer _debouncer;
+  late FocusNode _titleFocusNode;
 
-  Timer? _debounceTimer;
   bool _showSavedIcon = false;
   late Note _currentNote;
-  late FocusNode _titleFocusNode;
 
   @override
   void initState() {
     super.initState();
-
     _currentNote = widget.note;
     _titleController = TextEditingController(text: widget.note.title);
     _htmlController = HtmlEditorController();
     _titleFocusNode = FocusNode();
+    _debouncer = Debouncer(delay: const Duration(milliseconds: 500));
     _titleController.addListener(() {
-      _triggerSave();
+      _debouncer.run(() => _saveNote());
     });
   }
 
@@ -56,132 +54,37 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
     }
   }
 
-  void _triggerSave({String? contentOverride}) {
-    _debounceTimer?.cancel();
+  Future<void> _saveNote({String? contentOverride}) async {
+    final newTitle = _titleController.text.trim();
+    final newContent = contentOverride ?? await _htmlController.getText();
 
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
-      final newTitle = _titleController.text.trim();
-      final newContent = contentOverride ?? await _htmlController.getText();
+    if ((newTitle != _currentNote.title || newContent != _currentNote.content) &&
+        !(newTitle.isEmpty && newContent.trim().isEmpty)) {
+      final updatedNote = _currentNote.copyWith(
+        title: newTitle,
+        content: newContent,
+        updatedAt: DateTime.now(),
+      );
 
-      bool hasChanges =
-          newTitle != _currentNote.title || newContent != _currentNote.content;
-      bool isEffectivelyEmpty = newTitle.isEmpty && newContent.trim().isEmpty;
+      _currentNote = updatedNote;
+      widget.onSave(updatedNote);
+      _showSaveIndicator();
+    }
+  }
 
-      if (hasChanges && !isEffectivelyEmpty) {
-        Note updatedNote = Note(
-          id: _currentNote.id,
-          title: newTitle,
-          content: newContent,
-          imageUrl: _currentNote.imageUrl,
-          createdAt: _currentNote.createdAt,
-          updatedAt: DateTime.now(),
-        );
-
-        _currentNote = updatedNote;
-        widget.onSave(updatedNote);
-
-        setState(() {
-          _showSavedIcon = true;
-        });
-
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) {
-            setState(() {
-              _showSavedIcon = false;
-            });
-          }
-        });
-      }
+  void _showSaveIndicator() {
+    setState(() => _showSavedIcon = true);
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) setState(() => _showSavedIcon = false);
     });
   }
+
   @override
   void dispose() {
-    _debounceTimer?.cancel();
+    _debouncer.dispose();
     _titleController.dispose();
-    super.dispose();
     _titleFocusNode.dispose();
-  }
-
-  String _formatDate(DateTime date) {
-    return "${date.day.toString().padLeft(2, '0')} "
-        "${_monthShort(date.month)} "
-        "${date.year.toString().substring(2)} "
-        "${date.hour.toString().padLeft(2, '0')}:"
-        "${date.minute.toString().padLeft(2, '0')}";
-  }
-
-  String _monthShort(int month) {
-    const months = [
-      "JAN",
-      "FEB",
-      "MAR",
-      "APR",
-      "MAY",
-      "JUN",
-      "JUL",
-      "AUG",
-      "SEP",
-      "OCT",
-      "NOV",
-      "DEC",
-    ];
-    return months[month - 1];
-  }
-
-  Future<void> _pickAndUploadImage() async {
-    final status = await Permission.photos.request();
-    if (!status.isGranted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Permission denied to access gallery.")),
-      );
-      return;
-    }
-
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile == null) return;
-
-    try {
-      final imageUrl = await uploadImageToServer(pickedFile.path);
-      _htmlController.insertNetworkImage(imageUrl);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Image upload failed: $e")));
-      }
-    }
-  }
-
-  Future<String> uploadImageToServer(String imagePath) async {
-    final prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString("token");
-    final dio = Dio();
-    dio.options.headers['Authorization'] = 'Bearer $token';
-
-    final formData = FormData.fromMap({
-      "image": await MultipartFile.fromFile(imagePath),
-    });
-
-    try {
-      final response = await dio.post(
-        '${dotenv.env['BASE_URL']}/api/notes/upload-image',
-        data: formData,
-      );
-
-      if (response.statusCode == 200 && response.data["imageUrl"] != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Image uploaded successfully!")),
-        );
-
-        return response.data["imageUrl"];
-      } else {
-        throw Exception("Unexpected response: ${response.data}");
-      }
-    } catch (e) {
-      throw Exception("Upload error: $e");
-    }
+    super.dispose();
   }
 
   @override
@@ -194,10 +97,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
             TextField(
               controller: _titleController,
               focusNode: _titleFocusNode,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.normal,
-              ),
+              style: const TextStyle(fontSize: 18),
               decoration: const InputDecoration(
                 hintText: 'Note title...',
                 border: InputBorder.none,
@@ -207,29 +107,21 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.person,
-                    size: 20,
-                    color: Color.fromARGB(255, 38, 32, 32),
-                  ),
+                  const Icon(Icons.person, size: 20, color: Colors.grey),
                   const SizedBox(width: 8),
-                  Text(
-                    widget.username,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Color.fromARGB(255, 78, 73, 73),
-                    ),
-                  ),
+                  Text(widget.username,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, color: Colors.black87)),
                   const SizedBox(width: 10),
                   Text(
-                    "Last modified: ${_formatDate(_currentNote.updatedAt != "" ? _currentNote.updatedAt : _currentNote.createdAt)}",
+                    "Last modified: ${DateFormatter.format(widget.note.updatedAt)}",
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
-                  Spacer(),
+                  const Spacer(),
                   if (_showSavedIcon) ...[
-                    Icon(Icons.check, color: Colors.green, size: 18),
-                    SizedBox(width: 4),
-                    Text('Saved', style: TextStyle(color: Colors.green)),
+                    const Icon(Icons.check, color: Colors.green, size: 18),
+                    const SizedBox(width: 4),
+                    const Text('Saved', style: TextStyle(color: Colors.green)),
                   ],
                 ],
               ),
@@ -238,17 +130,10 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
             const Divider(),
             Align(
               alignment: Alignment.centerRight,
-              child: ElevatedButton.icon(
-                onPressed: _pickAndUploadImage,
-                icon: const Icon(Icons.image),
-                label: const Text("Upload Image"),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  textStyle: const TextStyle(fontSize: 14),
-                ),
+              child: UploadImageButton(
+                onImageUploaded: (url) {
+                  _htmlController.insertNetworkImage(url);
+                },
               ),
             ),
 
@@ -272,12 +157,9 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
                   height: MediaQuery.of(context).size.height * 0.6,
                 ),
                 callbacks: Callbacks(
-                  onFocus: () {
-                    _titleFocusNode.unfocus();
-                  },
-                  onChangeContent: (html) {
-                    _triggerSave(contentOverride: html ?? '');
-                  },
+                  onFocus: () => _titleFocusNode.unfocus(),
+                  onChangeContent: (html) =>
+                      _debouncer.run(() => _saveNote(contentOverride: html ?? '')),
                 ),
               ),
             ),

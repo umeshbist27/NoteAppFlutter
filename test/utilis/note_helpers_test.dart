@@ -17,7 +17,6 @@ void main() {
     'createdAt': DateTime.now().toIso8601String(),
     'updatedAt': DateTime.now().toIso8601String(),
   };
-
   final noteJson2 = {
     '_id': '2',
     'title': 'Another Note',
@@ -85,37 +84,41 @@ void main() {
       expect(controller.notes.isEmpty, true);
     });
 
-    test('saveNote triggers POST and refetch for new note with in ms', () async {
-      final newNote = Note(
-        id: 'null',
-        title: 'New Note',
-        content: 'New content',
-        imageUrl: null,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+    test(
+      'saveNote triggers POST and refetch for new note with in ms',
+      () async {
+        final newNote = Note(
+          id: 'null',
+          title: 'New Note',
+          content: 'New content',
+          imageUrl: null,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-      bool postCalled = false;
-      bool getCalled = false;
+        bool postCalled = false;
+        bool getCalled = false;
 
-      NoteService.client = MockClient((request) async {
-        if (request.method == 'POST' &&
-            request.url.path == '/api/notes/create') {
-          postCalled = true;
-          return http.Response('', 201);
-        }
-        if (request.method == 'GET' && request.url.path == '/api/notes/note') {
-          getCalled = true;
-          return http.Response(jsonEncode([noteJson1]), 200);
-        }
-        return http.Response('Error', 400);
-      });
+        NoteService.client = MockClient((request) async {
+          if (request.method == 'POST' &&
+              request.url.path == '/api/notes/create') {
+            postCalled = true;
+            return http.Response('', 201);
+          }
+          if (request.method == 'GET' &&
+              request.url.path == '/api/notes/note') {
+            getCalled = true;
+            return http.Response(jsonEncode([noteJson1]), 200);
+          }
+          return http.Response('Error', 400);
+        });
 
-      await controller.saveNote(newNote);
+        await controller.saveNote(newNote);
 
-      expect(postCalled, isTrue);
-      expect(getCalled, isTrue);
-    });
+        expect(postCalled, isTrue);
+        expect(getCalled, isTrue);
+      },
+    );
 
     test('deleteNote triggers DELETE and refetch after deletion', () async {
       controller.selectNote(Note.fromJson(noteJson1));

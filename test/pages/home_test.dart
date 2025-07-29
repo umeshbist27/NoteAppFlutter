@@ -7,14 +7,12 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
-
     expect(find.text('Note App'), findsOneWidget);
     expect(find.text('Note Taking App'), findsOneWidget);
     expect(find.textContaining('Sign up'), findsOneWidget);
     expect(find.text('Sign Up'), findsOneWidget);
     expect(find.text('Login'), findsOneWidget);
   });
-
   testWidgets('Tapping Sign Up navigates to /signup route', (
     WidgetTester tester,
   ) async {
@@ -29,7 +27,6 @@ void main() {
 
     await tester.tap(find.text('Sign Up'));
     await tester.pumpAndSettle();
-
     expect(find.text('Signup Screen'), findsOneWidget);
   });
 
@@ -44,10 +41,8 @@ void main() {
         },
       ),
     );
-
     await tester.tap(find.text('Login'));
     await tester.pumpAndSettle();
-
     expect(find.text('Login Screen'), findsOneWidget);
   });
 }
